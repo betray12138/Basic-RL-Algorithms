@@ -6,6 +6,8 @@ import os
 import torch
 import numpy as np
 import datetime
+from util.reward_norm import RewardScaling
+
 
 parser = argparse.ArgumentParser(description='PyTorch A2C Continuous')
 parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
@@ -28,6 +30,8 @@ parser.add_argument('--env-name', type=str, default="Pendulum-v0", metavar='N',
 					help='the env name')
 parser.add_argument('--max-train-steps', type=int, default=1000000, metavar='N',
 					help='the total training steps')
+parser.add_argument('--max-grad-norm', type=float, default=1.0, metavar='N',
+					help='gradient norm used to prevent gradient explosion')
 args = parser.parse_args()
 
 env = gym.make(args.env_name)
@@ -41,14 +45,18 @@ np.random.seed(args.seed)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+rewardScaling = RewardScaling(args.gamma)
+
 agent = A2C_Continuous(device=device,
                        state_dim=env.observation_space.shape[0],
                        action_dim=env.action_space.shape[0],
+                       max_action=float(env.action_space.high[0]),
                        gamma=args.gamma,
                        lr_policy=args.lr_policy,
                        lr_critic=args.lr_critic,
                        layer_size=args.layer_size,
-                       hidden_size=args.hidden_size)
+                       hidden_size=args.hidden_size,
+                       max_grad_norm=args.max_grad_norm)
 
 common_path = "./logs/" + agent.__class__.__name__ + "/seed_" + str(args.seed) + "_" + \
     datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + "/"

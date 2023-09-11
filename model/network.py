@@ -4,10 +4,11 @@ import torch.nn.functional as F
 
 
 class Policy(nn.Module):
-    def __init__(self, obs_dim: int, action_dim: int, layer_size: int, hidden_size: int, is_continuous) -> None:
+    def __init__(self, obs_dim: int, action_dim: int, max_action: float, layer_size: int, hidden_size: int, is_continuous) -> None:
         super(Policy, self).__init__()
         self.obs_dim = obs_dim
         self.action_dim = action_dim
+        self.max_action = max_action
         self.layer_size = layer_size
         self.hidden_size = hidden_size
         self.is_continuous = is_continuous  # 注意 某些算法比如DQN不适用于连续空间
@@ -22,20 +23,18 @@ class Policy(nn.Module):
             self.policy.extend(self.net_block)
         self.mean = nn.Linear(hidden_size, self.action_dim)
         if self.is_continuous:
-            self.log_var = nn.Linear(hidden_size, self.action_dim)
+            self.log_var = nn.Parameter(torch.zeros(1, action_dim), requires_grad=True)
         
         
     def forward(self, state: torch.FloatTensor):
         # 此处state需要是tensor 注意tensor的location   
         # 维度是batch_size * state_dim
         policy_output = self.policy(state)
+        mean = self.mean(policy_output)
         if self.is_continuous:
-            return self.mean(policy_output), self.log_var(policy_output)
+            return torch.tanh(mean) * self.max_action, self.log_var.expand_as(mean)
         else:
-            return F.softmax(self.mean(policy_output))
-        
-    def get_log_prob_for_continuous(self, action: torch.Tensor):
-        assert self.is_continuous 
+            return F.softmax(mean)
         
         
         
@@ -80,5 +79,5 @@ class VValue(nn.Module):
             self.vf.extend(self.net_block)
         self.vf.append(nn.Linear(hidden_size, 1))
         
-    def foward(self, state: torch.FloatTensor):
+    def forward(self, state: torch.FloatTensor):
         return self.vf(state)
