@@ -3,16 +3,17 @@ import torch.optim as optim
 import torch
 import numpy as np
 import torch.distributions as dist
-import gym
+import gymnasium as gym
 from torch.utils.tensorboard import SummaryWriter
 from torch.nn.utils import clip_grad_norm_
 from util.reward_norm import RewardScaling
+from replay.replay import ReplayBuffer
 
 class A2C_Continuous(object):
     def __init__(self, device: str, state_dim: int, action_dim: int, max_action: float,
                  gamma: float, lr_policy: float, lr_critic: float,
                  layer_size: int, hidden_size: int, max_grad_norm: float, 
-                 rewardScaling: RewardScaling = None) -> None:
+                 max_replay_size: int, rewardScaling: RewardScaling = None) -> None:
         super(A2C_Continuous, self).__init__()
         self.state_dim = state_dim
         self.action_dim = action_dim
@@ -23,13 +24,13 @@ class A2C_Continuous(object):
         self.layer_size = layer_size
         self.hidden_size = hidden_size
         self.device = device
-        self.time_discount = 1
         self.max_grad_norm = max_grad_norm
         self.rewardScaling = rewardScaling
+        self.replay = ReplayBuffer(state_dim, action_dim, max_replay_size)
         
         self.actor = Net.Policy(obs_dim=state_dim,
                                 action_dim=action_dim,
-                                max_action=max_action,
+                                max_action = max_action,
                                 layer_size=layer_size,
                                 hidden_size=hidden_size,
                                 is_continuous=True).to(device)
@@ -49,15 +50,8 @@ class A2C_Continuous(object):
         self.actor.eval()
         self.critic.eval()
         
-    def update(self, state: np.ndarray, action: np.ndarray, next_state: np.ndarray,
-               reward: np.ndarray, terminal: np.ndarray, log_prob: torch.FloatTensor):
-        
-        state = torch.FloatTensor(state).to(self.device).reshape(-1, self.state_dim)
-        action = torch.FloatTensor(action).to(self.device).reshape(-1, self.action_dim)
-        next_state = torch.FloatTensor(next_state).to(self.device).reshape(-1, self.state_dim)
-        reward = torch.FloatTensor(reward).to(self.device).reshape(-1, 1)
-        terminal = torch.FloatTensor(terminal).to(self.device).reshape(-1, 1)
-        
+    def update(self):
+        state, action, reward, next_state, terminal = self.replay.sample_all_to_tensor(self.device)
         self.__train()
         
         # compute necessary value
@@ -68,9 +62,11 @@ class A2C_Continuous(object):
             td_target = reward + self.gamma * v_s_ * (1 - terminal)
         
         # 更新actor 计算actor损失 
-        # actor_loss = - advantage * \log \pi(a|s) * time_discount
+        # actor_loss = - advantage * \log \pi(a|s)
         # actor_loss = - (r + \gamma V(s') - V(s)) * \log \pi(a|s)
-        actor_loss = - (td_target - v_s).detach() * log_prob * self.time_discount    # .detach()用于分离梯度
+        actor_dist = self.actor(state)
+        log_prob = actor_dist.log_prob(action)
+        actor_loss = - ((td_target - v_s).detach() * log_prob).mean()    # .detach()用于分离梯度
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
@@ -78,39 +74,37 @@ class A2C_Continuous(object):
         self.actor_optimizer.step()
         
         # 更新critic 计算critic损失
-        critic_loss = (td_target - v_s) ** 2
+        critic_loss = ((td_target - v_s) ** 2).mean()
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         clip_grad_norm_(self.critic.parameters(), self.max_grad_norm)
 
         self.critic_optimizer.step()
         
-        # 更新time_discount 沿trajectory衰减  
-        self.time_discount *= self.gamma
     
     def select_action(self, state: np.ndarray, is_evaluation=False) -> (np.ndarray, torch.FloatTensor):
         # 返回action 和 log_prob
         # 此处log_prob需要保持梯度，否则无法回传
-        state = torch.FloatTensor(state).to(self.device).reshape(-1, self.state_dim)
-        mean, logvar = self.actor(state)
-        action_dist = dist.Normal(mean, logvar.exp().sqrt())
-        action = action_dist.sample()
-        action = torch.clamp(action, -self.max_action, self.max_action)
-        log_prob = action_dist.log_prob(action)
-        if is_evaluation:
-            return mean.detach().cpu().numpy(), None
-        return action.cpu().numpy(), log_prob
+        with torch.no_grad():
+            state = torch.FloatTensor(state).to(self.device).reshape(-1, self.state_dim)
+            action_dist = self.actor(state)
+            action = action_dist.sample()
+            action = torch.clamp(action, -self.max_action, self.max_action)
+            if is_evaluation:
+                return action_dist.mean.detach().cpu().numpy()
+            return action.cpu().numpy()
     
     def evaluation(self, env: gym.Env, writter: SummaryWriter, steps=None):
         self.__eval()
         episode_reward = 0
-        state = env.reset() # 此时state是numpy
+        state, _ = env.reset() # 此时state是numpy
         done = False
-        while not done:
-            action, _ = self.select_action(state, True)
-            next_state, reward, done, _ = env.step(action)
-            episode_reward += reward[0]
-            state = next_state
+        truncated = False
+        while not done and not truncated:
+            action = self.select_action(state, True).flatten()
+            next_state, reward, done, truncated, _ = env.step(action)
+            episode_reward += reward
+            state = next_state.flatten()
         if steps:
             writter.add_scalar("evaluation/return", episode_reward, steps)
         return episode_reward
@@ -127,28 +121,34 @@ class A2C_Continuous(object):
         train_episodes = 0
         while cur_step < max_train_steps:
             train_episodes += 1
-            state = env.reset()
+            state, _ = env.reset()
             done = False
-            self.time_discount = 1  #每次episode完毕后重置
+            truncated = False
             episode_reward = 0
             if self.rewardScaling:
                 self.rewardScaling.reset()
-            while not done:
+            while not done and not truncated:
                 cur_step += 1
-                
-                action, log_prob = self.select_action(state)
-                next_state, reward, done, _ = env.step(action)
-                episode_reward += reward[0]
+                action = self.select_action(state).flatten()    # 使用flatten是因为gymnasium必须使用一维的
+                next_state, reward, done, truncated, _ = env.step(action)
+                episode_reward += reward
                 if self.rewardScaling:
-                    reward[0] = self.rewardScaling.get_and_update(reward[0])
-                self.update(state, action, next_state, reward, [done], log_prob)
-                state = next_state
+                    reward = self.rewardScaling.get_and_update(reward)
+                self.replay.store(s=state,
+                                  a=action,
+                                  r=np.array([reward]),
+                                  s_=next_state,
+                                  dw=np.array([done]))
+                state = next_state.flatten()
             print("Episode: " + str(train_episodes) + " training return: " + str(episode_reward))
             writter.add_scalar("training/return", episode_reward, cur_step)
             
+            self.update()
+            self.replay.clear()
+            
             if train_episodes % log_interval == 0:
-                self.evaluation(env, writter, cur_step)
+                self.evaluation(env_test, writter, cur_step)
             
             if train_episodes % save_interval == 0:
                 self.save_model(saving_path, cur_step)
-            
+  

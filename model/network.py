@@ -1,16 +1,16 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import torch.distributions as dist
 
 class Policy(nn.Module):
     def __init__(self, obs_dim: int, action_dim: int, max_action: float, layer_size: int, hidden_size: int, is_continuous) -> None:
         super(Policy, self).__init__()
         self.obs_dim = obs_dim
         self.action_dim = action_dim
-        self.max_action = max_action
         self.layer_size = layer_size
         self.hidden_size = hidden_size
+        self.max_action = max_action
         self.is_continuous = is_continuous  # 注意 某些算法比如DQN不适用于连续空间
         self.policy = nn.Sequential(
             nn.Linear(self.obs_dim, self.hidden_size)
@@ -21,6 +21,7 @@ class Policy(nn.Module):
         )
         for _ in range(self.layer_size - 1):
             self.policy.extend(self.net_block)
+        
         self.mean = nn.Linear(hidden_size, self.action_dim)
         if self.is_continuous:
             self.log_var = nn.Parameter(torch.zeros(1, action_dim), requires_grad=True)
@@ -32,9 +33,11 @@ class Policy(nn.Module):
         policy_output = self.policy(state)
         mean = self.mean(policy_output)
         if self.is_continuous:
-            return torch.tanh(mean) * self.max_action, self.log_var.expand_as(mean)
+            prob_dist = dist.Normal(torch.tanh(mean) * self.max_action, self.log_var.expand_as(mean).exp().sqrt())
+            return prob_dist
         else:
-            return F.softmax(mean)
+            prob_dist = dist.Categorical(F.softmax(mean, dim = -1))
+            return prob_dist
         
         
         
