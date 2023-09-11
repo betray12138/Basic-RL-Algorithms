@@ -2,22 +2,19 @@ import model.network as Net
 import torch.optim as optim
 import torch
 import numpy as np
-import torch.distributions as dist
-import gymnasium as gym
 from torch.utils.tensorboard import SummaryWriter
 from torch.nn.utils import clip_grad_norm_
 from util.reward_norm import RewardScaling
 from replay.replay import ReplayBuffer
 
 class A2C_Discrete(object):
-    def __init__(self, device: str, state_dim: int, action_dim: int, max_action: float,
+    def __init__(self, device: str, state_dim: int, action_dim: int,
                  gamma: float, lr_policy: float, lr_critic: float,
                  layer_size: int, hidden_size: int, max_grad_norm: float, 
                  max_replay_size: int, rewardScaling: RewardScaling = None) -> None:
         super(A2C_Discrete, self).__init__()
         self.state_dim = state_dim
         self.action_dim = action_dim
-        self.max_action = max_action
         self.gamma = gamma
         self.lr_policy = lr_policy
         self.lr_critic = lr_critic
@@ -26,11 +23,11 @@ class A2C_Discrete(object):
         self.device = device
         self.max_grad_norm = max_grad_norm
         self.rewardScaling = rewardScaling
-        self.replay = ReplayBuffer(state_dim, action_dim, max_replay_size)
+        self.replay = ReplayBuffer(state_dim, 1, max_replay_size)   # 离散空间动作被reshape成1
         
         self.actor = Net.Policy(obs_dim=state_dim,
                                 action_dim=action_dim,
-                                max_action = max_action,
+                                max_action = None,
                                 layer_size=layer_size,
                                 hidden_size=hidden_size,
                                 is_continuous=False).to(device)
@@ -64,7 +61,7 @@ class A2C_Discrete(object):
         # 更新actor 计算actor损失 
         # actor_loss = - advantage * \log \pi(a|s)
         # actor_loss = - (r + \gamma V(s') - V(s)) * \log \pi(a|s)
-        actor_dist = self.actor(state)
+        _, actor_dist = self.actor(state)
         log_prob = actor_dist.log_prob(action)
         actor_loss = - ((td_target - v_s).detach() * log_prob).mean()    # .detach()用于分离梯度
         self.actor_optimizer.zero_grad()
@@ -87,22 +84,21 @@ class A2C_Discrete(object):
         # 此处log_prob需要保持梯度，否则无法回传
         with torch.no_grad():
             state = torch.FloatTensor(state).to(self.device).reshape(-1, self.state_dim)
-            action_dist = self.actor(state)
+            mean, action_dist = self.actor(state)
             action = action_dist.sample()
-            action = torch.clamp(action, -self.max_action, self.max_action)
             if is_evaluation:
-                return action_dist.mean.detach().cpu().numpy()
+                return np.array([np.argmax(mean.detach().cpu().numpy())])
             return action.cpu().numpy()
     
-    def evaluation(self, env: gym.Env, writter: SummaryWriter, steps=None):
+    def evaluation(self, env, writter: SummaryWriter, steps=None):
         self.__eval()
         episode_reward = 0
-        state, _ = env.reset() # 此时state是numpy
+        state = env.reset() # 此时state是numpy
         done = False
         truncated = False
         while not done and not truncated:
-            action = self.select_action(state, True).flatten()
-            next_state, reward, done, truncated, _ = env.step(action)
+            action = self.select_action(state, True)
+            next_state, reward, done, truncated = env.step(action)
             episode_reward += reward
             state = next_state.flatten()
         if steps:
@@ -115,13 +111,13 @@ class A2C_Discrete(object):
         torch.save(self.critic.state_dict(), path + "critic_" + str(steps) + ".pth")
         
             
-    def train(self, env: gym.Env, env_test: gym.Env, writter: SummaryWriter, max_train_steps: int, 
+    def train(self, env, env_test, writter: SummaryWriter, max_train_steps: int, 
               save_interval: int, log_interval: int, saving_path: str):
         cur_step = 0
         train_episodes = 0
         while cur_step < max_train_steps:
             train_episodes += 1
-            state, _ = env.reset()
+            state = env.reset()
             done = False
             truncated = False
             episode_reward = 0
@@ -129,8 +125,8 @@ class A2C_Discrete(object):
                 self.rewardScaling.reset()
             while not done and not truncated:
                 cur_step += 1
-                action = self.select_action(state).flatten()    # 使用flatten是因为gymnasium必须使用一维的
-                next_state, reward, done, truncated, _ = env.step(action)
+                action = self.select_action(state)
+                next_state, reward, done, truncated = env.step(action)
                 episode_reward += reward
                 if self.rewardScaling:
                     reward = self.rewardScaling.get_and_update(reward)

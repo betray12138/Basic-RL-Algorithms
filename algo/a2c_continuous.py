@@ -2,8 +2,6 @@ import model.network as Net
 import torch.optim as optim
 import torch
 import numpy as np
-import torch.distributions as dist
-import gymnasium as gym
 from torch.utils.tensorboard import SummaryWriter
 from torch.nn.utils import clip_grad_norm_
 from util.reward_norm import RewardScaling

@@ -32,3 +32,20 @@ class GymNasiumWrapper(object):
 
     def __getattr__(self, attr):
         return getattr(self.env, attr)
+    
+class GymNasiumDiscreteWrapper(object):
+    def __init__(self, env: gym.Env):
+        super(GymNasiumDiscreteWrapper, self).__init__()
+        self.env = env
+    
+    def reset(self):
+        state, _ = self.env.reset()
+        return state
+    
+    def step(self, action: np.ndarray):
+        # 返回s' r done truncated
+        next_state, reward, done, truncated, _ = self.env.step(action[0])
+        return next_state, reward, done, truncated
+
+    def __getattr__(self, attr):
+        return getattr(self.env, attr)
