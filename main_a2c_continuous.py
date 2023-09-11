@@ -1,4 +1,3 @@
-from algo.a2c_continuous import A2C_Continuous
 import gymnasium as gym
 from tensorboardX import SummaryWriter
 import argparse
@@ -7,6 +6,10 @@ import torch
 import numpy as np
 import datetime
 from util.reward_norm import RewardScaling
+
+from env.env_wrapper import GymNasiumWrapper
+from algo.a2c_continuous import A2C_Continuous
+
 
 parser = argparse.ArgumentParser(description='PyTorch A2C Continuous')
 parser.add_argument('--gamma', type=float, default=0.9, metavar='G',
@@ -35,10 +38,13 @@ parser.add_argument('--max-replay-size', type=float, default=32, metavar='N',
 					help='maximum replay size to store the transition')
 args = parser.parse_args()
 
-env = gym.make(args.env_name)
-env_test = gym.make(args.env_name)
-# torch.manual_seed(args.seed)
-# np.random.seed(args.seed)
+env_unwrapped = gym.make(args.env_name)
+env_unwrapped_test = gym.make(args.env_name)
+torch.manual_seed(args.seed)
+np.random.seed(args.seed)
+
+env = GymNasiumWrapper(env_unwrapped)
+env_test = GymNasiumWrapper(env_unwrapped_test)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 

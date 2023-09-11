@@ -94,15 +94,15 @@ class A2C_Continuous(object):
                 return action_dist.mean.detach().cpu().numpy()
             return action.cpu().numpy()
     
-    def evaluation(self, env: gym.Env, writter: SummaryWriter, steps=None):
+    def evaluation(self, env, writter: SummaryWriter, steps=None):
         self.__eval()
         episode_reward = 0
-        state, _ = env.reset() # 此时state是numpy
+        state = env.reset() # 此时state是numpy
         done = False
         truncated = False
         while not done and not truncated:
-            action = self.select_action(state, True).flatten()
-            next_state, reward, done, truncated, _ = env.step(action)
+            action = self.select_action(state, True)
+            next_state, reward, done, truncated = env.step(action)
             episode_reward += reward
             state = next_state.flatten()
         if steps:
@@ -115,13 +115,13 @@ class A2C_Continuous(object):
         torch.save(self.critic.state_dict(), path + "critic_" + str(steps) + ".pth")
         
             
-    def train(self, env: gym.Env, env_test: gym.Env, writter: SummaryWriter, max_train_steps: int, 
+    def train(self, env, env_test, writter: SummaryWriter, max_train_steps: int, 
               save_interval: int, log_interval: int, saving_path: str):
         cur_step = 0
         train_episodes = 0
         while cur_step < max_train_steps:
             train_episodes += 1
-            state, _ = env.reset()
+            state = env.reset()
             done = False
             truncated = False
             episode_reward = 0
@@ -129,8 +129,8 @@ class A2C_Continuous(object):
                 self.rewardScaling.reset()
             while not done and not truncated:
                 cur_step += 1
-                action = self.select_action(state).flatten()    # 使用flatten是因为gymnasium必须使用一维的
-                next_state, reward, done, truncated, _ = env.step(action)
+                action = self.select_action(state)
+                next_state, reward, done, truncated = env.step(action)
                 episode_reward += reward
                 if self.rewardScaling:
                     reward = self.rewardScaling.get_and_update(reward)
