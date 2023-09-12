@@ -59,19 +59,19 @@ class A2C_Continuous(object):
             v_s_ = self.critic(next_state)
             td_target = reward + self.gamma * v_s_ * (1 - terminal)
         
-        # 更新actor 计算actor损失 
+        # update the actor
         # actor_loss = - advantage * \log \pi(a|s)
         # actor_loss = - (r + \gamma V(s') - V(s)) * \log \pi(a|s)
-        actor_dist = self.actor(state)
+        _, actor_dist = self.actor(state)
         log_prob = actor_dist.log_prob(action)
-        actor_loss = - ((td_target - v_s).detach() * log_prob).mean()    # .detach()用于分离梯度
+        actor_loss = - ((td_target - v_s).detach() * log_prob).mean()    # .detach() used to cancel the gradient
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
         
         self.actor_optimizer.step()
         
-        # 更新critic 计算critic损失
+        # update the critic
         critic_loss = ((td_target - v_s) ** 2).mean()
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
@@ -81,11 +81,9 @@ class A2C_Continuous(object):
         
     
     def select_action(self, state: np.ndarray, is_evaluation=False) -> (np.ndarray, torch.FloatTensor):
-        # 返回action 和 log_prob
-        # 此处log_prob需要保持梯度，否则无法回传
         with torch.no_grad():
             state = torch.FloatTensor(state).to(self.device).reshape(-1, self.state_dim)
-            action_dist = self.actor(state)
+            _, action_dist = self.actor(state)
             action = action_dist.sample()
             action = torch.clamp(action, -self.max_action, self.max_action)
             if is_evaluation:
@@ -95,7 +93,7 @@ class A2C_Continuous(object):
     def evaluation(self, env, writter: SummaryWriter, steps=None):
         self.__eval()
         episode_reward = 0
-        state = env.reset() # 此时state是numpy
+        state = env.reset()
         done = False
         truncated = False
         while not done and not truncated:
@@ -108,7 +106,7 @@ class A2C_Continuous(object):
         return episode_reward
     
     def save_model(self, path: str, steps: int):
-        # 此处path传入目录 以 /结尾
+        # path denotes the directory location end with /
         torch.save(self.actor.state_dict(), path + "actor_" + str(steps) + ".pth")
         torch.save(self.critic.state_dict(), path + "critic_" + str(steps) + ".pth")
         

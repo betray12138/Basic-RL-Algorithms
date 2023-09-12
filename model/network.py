@@ -33,8 +33,9 @@ class Policy(nn.Module):
         policy_output = self.policy(state)
         mean = self.mean(policy_output)
         if self.is_continuous:
-            prob_dist = dist.Normal(torch.tanh(mean) * self.max_action, self.log_var.expand_as(mean).exp().sqrt())
-            return prob_dist
+            action_mean = torch.tanh(mean) * self.max_action
+            prob_dist = dist.Normal(action_mean, self.log_var.expand_as(mean).exp().sqrt())
+            return action_mean, prob_dist
         else:
             action_mean = F.softmax(mean, dim = 1)
             prob_dist = dist.Categorical(action_mean)  
@@ -60,7 +61,7 @@ class QValue(nn.Module):
             self.qf.extend(self.net_block)
         self.qf.append(nn.Linear(hidden_size, 1))
         
-    def foward(self, state: torch.FloatTensor, action: torch.FloatTensor):
+    def forward(self, state: torch.FloatTensor, action: torch.FloatTensor):
         input = torch.cat((state, action), dim=-1)
         return self.qf(input)
     
