@@ -39,3 +39,14 @@ class RewardScaling(object):
     def reset(self):
         # 每一次轨迹开始都需要重置accumulated_discount_reward
         self.accumulated_discount_reward = 0
+        
+        
+class Normalization(object):
+    def __init__(self, dim) -> None:
+        self.dim = dim
+        self.norm_maintainer = ZeroNormalization(dim)
+        
+    def get_and_upate(self, x):
+        self.norm_maintainer.update(x)
+        mean, std = self.norm_maintainer.get_mean_std()
+        return (x - mean) / (std + 1e-6)    # 防止除0

@@ -4,14 +4,14 @@ import torch
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 from torch.nn.utils import clip_grad_norm_
-from util.reward_norm import RewardScaling
+from util.reward_norm import RewardScaling, Normalization
 from replay.replay import ReplayBuffer
 
 class A2C_Discrete(object):
     def __init__(self, device: str, state_dim: int, action_dim: int,
                  gamma: float, lr_policy: float, lr_critic: float,
                  layer_size: int, hidden_size: int, max_grad_norm: float, 
-                 max_replay_size: int, rewardScaling: RewardScaling = None) -> None:
+                 max_replay_size: int, rewardScaling: RewardScaling = None, stateNorm: Normalization = None) -> None:
         super(A2C_Discrete, self).__init__()
         self.state_dim = state_dim
         self.action_dim = action_dim
@@ -23,6 +23,7 @@ class A2C_Discrete(object):
         self.device = device
         self.max_grad_norm = max_grad_norm
         self.rewardScaling = rewardScaling
+        self.stateNorm = stateNorm
         self.replay = ReplayBuffer(state_dim, 1, max_replay_size)   # 离散空间动作被reshape成1
         
         self.actor = Net.Policy(obs_dim=state_dim,
@@ -94,11 +95,15 @@ class A2C_Discrete(object):
         self.__eval()
         episode_reward = 0
         state = env.reset() # 此时state是numpy
+        if self.stateNorm is not None:
+            state = self.stateNorm.get_and_upate(state)
         done = False
         truncated = False
         while not done and not truncated:
             action = self.select_action(state, True)
             next_state, reward, done, truncated = env.step(action)
+            if self.stateNorm is not None:
+                next_state = self.stateNorm.get_and_upate(next_state.flatten())
             episode_reward += reward
             state = next_state.flatten()
         if steps:
@@ -118,6 +123,8 @@ class A2C_Discrete(object):
         while cur_step < max_train_steps:
             train_episodes += 1
             state = env.reset()
+            if self.stateNorm is not None:
+                state = self.stateNorm.get_and_upate(state)
             done = False
             truncated = False
             episode_reward = 0
@@ -127,6 +134,8 @@ class A2C_Discrete(object):
                 cur_step += 1
                 action = self.select_action(state)
                 next_state, reward, done, truncated = env.step(action)
+                if self.stateNorm is not None:
+                    next_state = self.stateNorm.get_and_upate(next_state.flatten())
                 episode_reward += reward
                 if self.rewardScaling:
                     reward = self.rewardScaling.get_and_update(reward)

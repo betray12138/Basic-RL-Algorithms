@@ -36,8 +36,8 @@ class Policy(nn.Module):
             prob_dist = dist.Normal(torch.tanh(mean) * self.max_action, self.log_var.expand_as(mean).exp().sqrt())
             return prob_dist
         else:
-            action_mean = F.softmax(mean, dim = 0)
-            prob_dist = dist.Categorical(action_mean)  # 注意此处一定是沿batch维度求softmax
+            action_mean = F.softmax(mean, dim = 1)
+            prob_dist = dist.Categorical(action_mean)  
             return action_mean, prob_dist
         
         

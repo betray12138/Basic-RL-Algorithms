@@ -43,8 +43,8 @@ env_unwrapped_test = gym.make(args.env_name)
 torch.manual_seed(args.seed)
 np.random.seed(args.seed)
 
-env = GymNasiumWrapper(env_unwrapped)
-env_test = GymNasiumWrapper(env_unwrapped_test)
+env = GymNasiumWrapper(env_unwrapped, True)
+env_test = GymNasiumWrapper(env_unwrapped_test, True)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
