@@ -1,10 +1,22 @@
-Basic-RL-Algorithms 该project用于实现各类基础RL算法
+## Basic-RL-Algorithms 
 
-文件组织：
-----replay  文件夹存放关于replay buffer相关代码
-----algo    文件夹存放算法相关代码
-----model   文件夹存放policy value network相关结构
+### Description
+This project is used to implement all kinds of RL basic algorithms.
+
+## File Structure
+1. **algo** to save the code regarding the algorithms' implementations
+2. **docs** to save the descriptions of the corresponding algorithms
+3. **env** to provide the env_wrapper (gym, gymnasium)
+4. **model** to save the network structure of policy, state-value function, action-value function
+5. **util** to save the code regrading the common tricks
 
 
-已实现算法：
-A2C 
+## The implemented algorithms
+1. A2C (A2C Continuous / A2C Discrete)
+
+## How to use
+we provide the environment.yaml, and you can import it with anaconda like: 
+
+`conda env create -f environment.yaml`
+
+`conda activate yours`
