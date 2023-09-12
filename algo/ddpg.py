@@ -95,7 +95,7 @@ class DDPG(object):
 		# target update
 		for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
 			target_param.data.copy_(self.target_update_coee * param + (1 - self.target_update_coee) * target_param)
-		for param, target_param in zip(self.actor.parameters(), self.actor.parameters()):
+		for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
 			target_param.data.copy_(self.target_update_coee * param + (1 - self.target_update_coee) * target_param)
 		
 	def select_action(self, state: np.ndarray, is_evaluation=False) -> (np.ndarray, torch.FloatTensor):
