@@ -13,7 +13,7 @@ from algo.a2c_discrete import A2C_Discrete
 
 parser = argparse.ArgumentParser(description='PyTorch A2C Continuous')
 parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
-					help='discount factor (default: 0.9)')
+					help='discount factor (default: 0.99)')
 parser.add_argument('--seed', type=int, default=0, metavar='N',
 					help='random seed (default: 0)')
 parser.add_argument('--log-interval', type=int, default=5, metavar='N',
