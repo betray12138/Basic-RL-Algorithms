@@ -38,8 +38,8 @@ parser.add_argument('--max-replay-size', type=float, default=32, metavar='N',
 					help='maximum replay size to store the transition')
 args = parser.parse_args()
 
-env_unwrapped = gym.make(args.env_name)
-env_unwrapped_test = gym.make(args.env_name)
+env_unwrapped = gym.make(args.env_name, args.seed)
+env_unwrapped_test = gym.make(args.env_name, args.seed)
 torch.manual_seed(args.seed)
 np.random.seed(args.seed)
 

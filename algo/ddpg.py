@@ -13,7 +13,8 @@ class DDPG(object):
 	def __init__(self, device: str, state_dim: int, action_dim: int, max_action: float,
 				 gamma: float, lr_policy: float, lr_critic: float,
 				 layer_size: int, hidden_size: int, max_grad_norm: float, 
-				 max_replay_size: int, batch_size:int, target_update_coee: float) -> None:
+				 max_replay_size: int, batch_size:int, target_update_coee: float, action_noise_std: float,
+	 			 rewardScaling: RewardScaling = None) -> None:
 		super(DDPG, self).__init__()
 		self.state_dim = state_dim
 		self.action_dim = action_dim
@@ -27,7 +28,9 @@ class DDPG(object):
 		self.max_grad_norm = max_grad_norm
 		self.batch_size = batch_size
 		self.target_update_coee = target_update_coee	# denotes the update brought by source network
+		self.action_noise_std = action_noise_std
 		self.replay = ReplayBuffer(state_dim, action_dim, max_replay_size)
+		self.rewardScale = rewardScaling
 		
 		self.actor = Net.Policy(obs_dim=state_dim,
 								action_dim=action_dim,
@@ -136,26 +139,32 @@ class DDPG(object):
 			done = False
 			truncated = False
 			episode_reward = 0
+			if self.rewardScale:
+				self.rewardScale.reset()
 			while not done and not truncated:
 				cur_step += 1
 				if cur_step <= random_steps:
 					action = env.action_space.sample()	# 随机采样动作
 				else:
 					action = self.select_action(state)
+					# DDPG use action noise to ensure exploration
+					action = (action + np.random.normal(0, self.action_noise_std, size=self.action_dim)).clip(-self.max_action, self.max_action)
 				next_state, reward, done, truncated = env.step(action)
 				episode_reward += reward
+				if self.rewardScale:
+					reward = self.rewardScaling.get_and_update(reward)
 				self.replay.store(s=state,
 								  a=action,
 								  r=np.array([reward]),
 								  s_=next_state,
 								  dw=np.array([done]))
 				state = next_state.flatten()
-    
+	
 				if cur_step > random_steps:
 					# begin to update the network
 					# of course, you can choose to update the model multiple times
 					self.update()
-    
+	
 			print("Episode: " + str(train_episodes) + " training return: " + str(episode_reward))
 			writter.add_scalar("training/return", episode_reward, cur_step)
 			

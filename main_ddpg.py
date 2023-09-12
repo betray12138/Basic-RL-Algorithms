@@ -28,7 +28,7 @@ parser.add_argument('--layer-size', type=float, default=2, metavar='N',
 					help='the layer size of network')
 parser.add_argument('--hidden-size', type=float, default=64, metavar='N',
 					help='the hidden size of network')
-parser.add_argument('--env-name', type=str, default="Pendulum-v1", metavar='N',
+parser.add_argument('--env-name', type=str, default="BipedalWalker-v3", metavar='N',
 					help='the env name')
 parser.add_argument('--max-train-steps', type=int, default=1000000, metavar='N',
 					help='the total training steps')
@@ -42,10 +42,12 @@ parser.add_argument('--target-update-coefficient', type=float, default=0.005, me
 					help='coefficient used to soft update the target network')
 parser.add_argument('--random-steps', type=float, default=10000, metavar='N',
 					help='the steps used to collect the initial dataset')
+parser.add_argument('--noise-std', type=float, default=0.1, metavar='N',
+					help='the noise std used to ensure exploration')
 args = parser.parse_args()
 
-env_unwrapped = gym.make(args.env_name)
-env_unwrapped_test = gym.make(args.env_name)
+env_unwrapped = gym.make(args.env_name, args.seed)
+env_unwrapped_test = gym.make(args.env_name, args.seed)
 torch.manual_seed(args.seed)
 np.random.seed(args.seed)
 
@@ -68,7 +70,8 @@ agent = DDPG(device=device,
              max_grad_norm=args.max_grad_norm,
              max_replay_size=args.max_replay_size,
              batch_size=args.batch_size,
-             target_update_coee=args.target_update_coefficient)
+             target_update_coee=args.target_update_coefficient,
+             action_noise_std=args.noise_std)
 
 common_path = "./logs/" + agent.__class__.__name__ + "/" + args.env_name + "/seed_" + str(args.seed) + "_" + \
     datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + "/"

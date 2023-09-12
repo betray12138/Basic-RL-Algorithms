@@ -13,7 +13,7 @@ The repo provide the implementation of DDPG.
 
 DDPG contains four networks in total, namely actor, target actor, critic and target critic networks. 
 
-DDPG uses the deterministic policy to generate the action, whose loss is :
+DDPG uses the deterministic policy to generate the action (use `N(0, noise_std)` to ensure exploration), whose loss is :
 
 $J_\pi = - Q(s, \pi(a|s))$
 
@@ -37,6 +37,8 @@ We can use soft-update rules to update the target networks
 Tips:
 
 1. You can run the code with `python main_ddpg.py`.
+
+2. Do not forget to set the action noise for exploration.
 
 We use `gymnasium-Pendulum-v1` to test the continuous variant and use `gynasium-Cartpole-v1` to test the discrete variant.
 
