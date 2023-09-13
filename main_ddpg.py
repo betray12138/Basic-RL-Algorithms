@@ -24,19 +24,19 @@ parser.add_argument('--lr-policy', type=float, default=4e-4, metavar='N',
 					help='the learning rate for training the policy')
 parser.add_argument('--lr-critic', type=float, default=4e-3, metavar='N',
 					help='the learning rate for training the critic')
-parser.add_argument('--layer-size', type=float, default=2, metavar='N',
+parser.add_argument('--layer-size', type=float, default=3, metavar='N',
 					help='the layer size of network')
-parser.add_argument('--hidden-size', type=float, default=64, metavar='N',
+parser.add_argument('--hidden-size', type=float, default=256, metavar='N',
 					help='the hidden size of network')
-parser.add_argument('--env-name', type=str, default="BipedalWalker-v3", metavar='N',
+parser.add_argument('--env-name', type=str, default="HalfCheetah-v4", metavar='N',
 					help='the env name')
-parser.add_argument('--max-train-steps', type=int, default=1000000, metavar='N',
+parser.add_argument('--max-train-steps', type=int, default=5000000, metavar='N',
 					help='the total training steps')
 parser.add_argument('--max-grad-norm', type=float, default=0.5, metavar='N',
 					help='gradient norm used to prevent gradient explosion')
-parser.add_argument('--max-replay-size', type=float, default=50000, metavar='N',
+parser.add_argument('--max-replay-size', type=float, default=100000, metavar='N',
 					help='maximum replay size to store the transition')
-parser.add_argument('--batch-size', type=int, default=128, metavar='N',
+parser.add_argument('--batch-size', type=int, default=256, metavar='N',
 					help='batch size used to train the network')
 parser.add_argument('--target-update-coefficient', type=float, default=0.005, metavar='N',
 					help='coefficient used to soft update the target network')

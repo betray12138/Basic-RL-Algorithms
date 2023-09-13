@@ -40,6 +40,8 @@ Tips:
 
 2. Do not forget to set the action noise for exploration.
 
-We use `gymnasium-Pendulum-v1` to test the continuous variant and use `gynasium-Cartpole-v1` to test the discrete variant.
+We use `gymnasium-Pendulum-v1` and `gymnasium-HalfCheetah-v4` to test DDPG.
 
 ![The training curve on gymnasium-Pendulum-v1](Gymnasium-Pendulum-v1.png)
+
+![The training curve on gymnasium-HalfCheetah-v4](Gymnasium-HalfCheetah-v4.png)
