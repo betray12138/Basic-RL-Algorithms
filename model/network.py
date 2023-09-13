@@ -11,7 +11,7 @@ class Policy(nn.Module):
         self.layer_size = layer_size
         self.hidden_size = hidden_size
         self.max_action = max_action
-        self.is_continuous = is_continuous  # 注意 某些算法比如DQN不适用于连续空间
+        self.is_continuous = is_continuous  
         self.policy = nn.Sequential(
             nn.Linear(self.obs_dim, self.hidden_size)
         )
@@ -28,8 +28,8 @@ class Policy(nn.Module):
         
         
     def forward(self, state: torch.FloatTensor) -> (torch.Tensor, torch.Tensor):
-        # 此处state需要是tensor 注意tensor的location   
-        # 维度是batch_size * state_dim
+        # state is tensor 
+        # the dimension is batch_size * state_dim
         policy_output = self.policy(state)
         mean = self.mean(policy_output)
         if self.is_continuous:

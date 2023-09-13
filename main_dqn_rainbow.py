@@ -7,14 +7,14 @@ import numpy as np
 import datetime
 
 from env.env_wrapper import GymNasiumWrapper
-from algo.dqn_initial import DQN
+from algo.dqn_rainbow import RainBow
 
 
 parser = argparse.ArgumentParser(description='PyTorch DQN initial')
 parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
 					help='discount factor (default: 0.99)')
-parser.add_argument('--seed', type=int, default=0, metavar='N',
-					help='random seed (default: 0)')
+parser.add_argument('--seed', type=int, default=121, metavar='N',
+					help='random seed (default: 121)')
 parser.add_argument('--log-interval', type=int, default=5, metavar='N',
 					help='interval between training status logs (default: 10)')
 parser.add_argument('--save-interval', type=int, default=100, metavar='N',
@@ -39,14 +39,32 @@ parser.add_argument('--target-update-coefficient', type=float, default=0.005, me
 					help='coefficient used to soft update the target network')
 parser.add_argument('--random-steps', type=float, default=10000, metavar='N',
 					help='the steps used to collect the initial dataset')
-parser.add_argument('--target-interval', type=int, default=2, metavar='N',
+parser.add_argument('--target-interval', type=int, default=1, metavar='N',
 					help='the frequency of updating the target network')
 parser.add_argument('--epsilon-decay', type=float, default=5e-4, metavar='N',
 					help='the frequency of updating the target network')
-parser.add_argument('--epsilon-max', type=int, default=1.0, metavar='N',
+parser.add_argument('--epsilon-max', type=int, default=0.5, metavar='N',
 					help='the frequency of updating the target network')
 parser.add_argument('--epsilon-min', type=int, default=0.1, metavar='N',
 					help='the frequency of updating the target network')
+
+
+# RainBow Tricks
+# 1. double DQN
+parser.add_argument('--use-double', type=bool, default=True, metavar='N',
+					help='whether to use double network tricks')
+
+# 2. PER
+parser.add_argument('--use-per', type=bool, default=True, metavar='N',
+					help='whether to use PER')
+parser.add_argument('--prop-alpha', type=float, default=0.6, metavar='N',
+					help='the power of computing the p(i)')
+parser.add_argument('--weight-beta', type=float, default=0.4, metavar='N',
+					help='the initial weight of beta')
+parser.add_argument('--gain-beta-steps', type=int, default=5e5, metavar='N',
+					help='the steps for beta changes to 1')
+
+
 args = parser.parse_args()
 
 env_unwrapped = gym.make(args.env_name, args.seed)
@@ -59,7 +77,7 @@ env_test = GymNasiumWrapper(env_unwrapped_test, False)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-agent = DQN(device=device,
+agent = RainBow(device=device,
              state_dim=env.observation_space.shape[0],
              action_dim=env.action_space.n,
              gamma=args.gamma,
@@ -73,7 +91,12 @@ agent = DQN(device=device,
              target_interval=args.target_interval,
              epsilon_decay=args.epsilon_decay,
              epsilon_max=args.epsilon_max,
-             epsilon_min=args.epsilon_min)
+             epsilon_min=args.epsilon_min, 
+             use_double=args.use_double,
+             use_per=args.use_per,
+             prop_alpha=args.prop_alpha,
+             weight_beta=args.weight_beta,
+             gain_beta_steps=args.gain_beta_steps)
 
 common_path = "./logs/" + agent.__class__.__name__ + "/" + args.env_name + "/seed_" + str(args.seed) + "_" + \
     datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + "/"
