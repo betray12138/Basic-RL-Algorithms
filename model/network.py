@@ -27,7 +27,7 @@ class Policy(nn.Module):
             self.log_var = nn.Parameter(torch.zeros(1, action_dim), requires_grad=True)
         
         
-    def forward(self, state: torch.FloatTensor):
+    def forward(self, state: torch.FloatTensor) -> (torch.Tensor, torch.Tensor):
         # 此处state需要是tensor 注意tensor的location   
         # 维度是batch_size * state_dim
         policy_output = self.policy(state)
@@ -61,7 +61,7 @@ class QValue(nn.Module):
             self.qf.extend(self.net_block)
         self.qf.append(nn.Linear(hidden_size, 1))
         
-    def forward(self, state: torch.FloatTensor, action: torch.FloatTensor):
+    def forward(self, state: torch.FloatTensor, action: torch.FloatTensor) -> torch.Tensor:
         input = torch.cat((state, action), dim=-1)
         return self.qf(input)
     
@@ -84,5 +84,5 @@ class VValue(nn.Module):
             self.vf.extend(self.net_block)
         self.vf.append(nn.Linear(hidden_size, 1))
         
-    def forward(self, state: torch.FloatTensor):
+    def forward(self, state: torch.FloatTensor) -> torch.Tensor:
         return self.vf(state)

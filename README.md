@@ -13,6 +13,7 @@ This project is used to implement all kinds of RL basic algorithms.
 
 ## The implemented algorithms
 1. A2C (A2C Continuous / A2C Discrete)
+2. DDPG
 
 ## How to use
 we provide the environment.yaml, and you can import it with anaconda like: 
