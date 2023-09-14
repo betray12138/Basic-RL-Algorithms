@@ -77,11 +77,6 @@ class DuelingPolicy(nn.Module):
         action_val = vs + adv - adv.mean(1).unsqueeze(1).expand(state.shape[0], self.action_dim)
         return action_val, None     # use None to aligh with the other networks
         
-        
-
-
-
-        
 class QValue(nn.Module):
     def __init__(self, obs_dim: int, action_dim: int, layer_size: int, hidden_size: int):
         super(QValue, self).__init__()

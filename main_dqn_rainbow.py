@@ -19,7 +19,7 @@ parser.add_argument('--log-interval', type=int, default=5, metavar='N',
 					help='interval between training status logs (default: 10)')
 parser.add_argument('--save-interval', type=int, default=100, metavar='N',
 					help='interval between saving the model (default: 100)')
-parser.add_argument('--lr-policy', type=float, default=4e-4, metavar='N',
+parser.add_argument('--lr-policy', type=float, default=1e-4, metavar='N',
 					help='the learning rate for training the policy')
 parser.add_argument('--layer-size', type=float, default=3, metavar='N',
 					help='the layer size of network')
@@ -29,7 +29,7 @@ parser.add_argument('--env-name', type=str, default="CartPole-v1", metavar='N',
 					help='the env name')
 parser.add_argument('--max-train-steps', type=int, default=5000000, metavar='N',
 					help='the total training steps')
-parser.add_argument('--max-grad-norm', type=float, default=1.0, metavar='N',
+parser.add_argument('--max-grad-norm', type=float, default=10.0, metavar='N',
 					help='gradient norm used to prevent gradient explosion')
 parser.add_argument('--max-replay-size', type=float, default=50000, metavar='N',
 					help='maximum replay size to store the transition')
@@ -55,7 +55,7 @@ parser.add_argument('--use-double', type=bool, default=True, metavar='N',
 					help='whether to use double network tricks')
 
 # 2. PER
-parser.add_argument('--use-per', type=bool, default=True, metavar='N',
+parser.add_argument('--use-per', type=bool, default=False, metavar='N',
 					help='whether to use PER')
 parser.add_argument('--prop-alpha', type=float, default=0.6, metavar='N',
 					help='the power of computing the p(i)')
@@ -65,7 +65,7 @@ parser.add_argument('--gain-beta-steps', type=int, default=5e5, metavar='N',
 					help='the steps for beta changes to 1')
 
 # 3. Dueling DQN
-parser.add_argument('--use-duel', type=bool, default=True, metavar='N',
+parser.add_argument('--use-duel', type=bool, default=False, metavar='N',
 					help='whether to use dueling network tricks')
 
 
