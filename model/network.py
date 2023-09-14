@@ -41,7 +41,46 @@ class Policy(nn.Module):
             prob_dist = dist.Categorical(action_mean)  
             return action_mean, prob_dist
         
+class DuelingPolicy(nn.Module):
+    def __init__(self, obs_dim: int, action_dim: int, layer_size: int, hidden_size: int) -> None:
+        super(DuelingPolicy, self).__init__()
+        self.obs_dim = obs_dim
+        self.action_dim = action_dim
+        self.layer_size = layer_size
+        self.hidden_size = hidden_size
+        self.policy = nn.Sequential(
+            nn.Linear(self.obs_dim, self.hidden_size)
+        )
+        self.net_block = nn.Sequential(
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size)
+        )
+        for _ in range(self.layer_size - 1):
+            self.policy.extend(self.net_block)
         
+        self.vs = nn.Linear(hidden_size, 1)
+        self.adv = nn.Linear(hidden_size, self.action_dim)
+        
+        
+    def forward(self, state: torch.FloatTensor) -> (torch.Tensor, None):
+        # state is tensor 
+        # the dimension is batch_size * state_dim
+        policy_output = self.policy(state)
+        
+        # expand used to extend the dimension into batch_size * self.action_dim
+        vs = self.vs(policy_output).expand(state.shape[0], self.action_dim) 
+        adv = self.adv(policy_output)
+        
+        # the dimension of adv is batch_size * self.action_dim
+        # adv.mean(1) is used to compute the mean of dimension 1, and this will cause the dimension decreasement
+        # use unsqueeze(1) to add the new dimension before dimension 2
+        action_val = vs + adv - adv.mean(1).unsqueeze(1).expand(state.shape[0], self.action_dim)
+        return action_val, None     # use None to aligh with the other networks
+        
+        
+
+
+
         
 class QValue(nn.Module):
     def __init__(self, obs_dim: int, action_dim: int, layer_size: int, hidden_size: int):

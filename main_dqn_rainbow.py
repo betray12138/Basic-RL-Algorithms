@@ -25,13 +25,13 @@ parser.add_argument('--layer-size', type=float, default=3, metavar='N',
 					help='the layer size of network')
 parser.add_argument('--hidden-size', type=float, default=256, metavar='N',
 					help='the hidden size of network')
-parser.add_argument('--env-name', type=str, default="LunarLander-v2", metavar='N',
+parser.add_argument('--env-name', type=str, default="CartPole-v1", metavar='N',
 					help='the env name')
 parser.add_argument('--max-train-steps', type=int, default=5000000, metavar='N',
 					help='the total training steps')
 parser.add_argument('--max-grad-norm', type=float, default=1.0, metavar='N',
 					help='gradient norm used to prevent gradient explosion')
-parser.add_argument('--max-replay-size', type=float, default=100000, metavar='N',
+parser.add_argument('--max-replay-size', type=float, default=50000, metavar='N',
 					help='maximum replay size to store the transition')
 parser.add_argument('--batch-size', type=int, default=256, metavar='N',
 					help='batch size used to train the network')
@@ -63,6 +63,10 @@ parser.add_argument('--weight-beta', type=float, default=0.4, metavar='N',
 					help='the initial weight of beta')
 parser.add_argument('--gain-beta-steps', type=int, default=5e5, metavar='N',
 					help='the steps for beta changes to 1')
+
+# 3. Dueling DQN
+parser.add_argument('--use-duel', type=bool, default=True, metavar='N',
+					help='whether to use dueling network tricks')
 
 
 args = parser.parse_args()
@@ -96,7 +100,8 @@ agent = RainBow(device=device,
              use_per=args.use_per,
              prop_alpha=args.prop_alpha,
              weight_beta=args.weight_beta,
-             gain_beta_steps=args.gain_beta_steps)
+             gain_beta_steps=args.gain_beta_steps,
+             use_duel=args.use_duel)
 
 common_path = "./logs/" + agent.__class__.__name__ + "/" + args.env_name + "/seed_" + str(args.seed) + "_" + \
     datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + "/"

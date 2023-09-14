@@ -25,6 +25,23 @@
     year={2016}
   }`
 
+3. PER
+
+  `@article{schaul2015prioritized,
+  title={Prioritized experience replay},
+  author={Schaul, Tom and Quan, John and Antonoglou, Ioannis and Silver, David},
+  journal={arXiv preprint arXiv:1511.05952},
+  year={2015}}`
+
+4. Dueling-DQN
+  `@inproceedings{wang2016dueling,
+  title={Dueling network architectures for deep reinforcement learning},
+  author={Wang, Ziyu and Schaul, Tom and Hessel, Matteo and Hasselt, Hado and Lanctot, Marc and Freitas, Nando},
+  booktitle={International conference on machine learning},
+  pages={1995--2003},
+  year={2016},
+  organization={PMLR}}`
+
 ### Description
 The repo provide the implementation of DQN and its all kinds of variants.
 
@@ -82,3 +99,20 @@ When $\beta$ equals to 1, this will decay to uniformly sampling. The weight play
 $w_i = \frac{w_i}{\max_j w_j}$
 
 In practice, we use SegmentTree to implement PER (Priority Proportional Sampling). Specifically, the leaf node saves the priority of transitions, and the root node saves the sum of priority, which is used to compute the $p(i)$.
+
+#### 4. Dueling-DQN
+Dueling-DQN uses Advantage Function and Value Function to decompose the traditional Q function network. 
+
+$Q(s,a) = V(s) + A(s,a)$
+
+As the following figure shows, we can intuitively imagine that this decomposition can help assgin the credit brought by the actions or the state.
+
+![Dueling-DQN network](dueling_network.png)
+
+Furthermore, this network structure can change the action-value function conditioning on the same state, though the action may be not sampled.
+
+However, there is some ambiguity in the above decomposition equation, as $V(s)$ and $A(s,a)$ can fluctuate under a fixed $Q(s,a)$. To mitigate this problem, we always use:
+
+$Q(s,a)=V(s)+A(s,a) - \frac{1}{|A|}\sum_{a'}A(s,a')$
+
+$Q(s,a)=V(s)+A(s,a) - \max_{a'}A(s,a')$

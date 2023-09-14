@@ -28,7 +28,7 @@ class ReplayBuffer(object):
 
     def sample_to_tensor(self, batch_size: int, device: str):
         index = np.random.choice(self.size, size=batch_size)  # Randomly sampling
-        return self.__sample_with_index_to_tensor(index, device)
+        return self.sample_with_index_to_tensor(index, device)
     
     def sample_all_to_tensor(self, device: str):
         index = np.array([i for i in range(self.size)])

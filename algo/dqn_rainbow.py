@@ -16,7 +16,8 @@ class RainBow(object):
 				 max_replay_size: int, batch_size:int, target_update_coee: float, target_interval: int,
 				  epsilon_decay: float, epsilon_max: float, epsilon_min: float, 
 				 use_double: bool, use_per: bool, 
-     			 prop_alpha: float, weight_beta: float, gain_beta_steps: float) -> None:
+	 			 prop_alpha: float, weight_beta: float, gain_beta_steps: float,
+		 		 use_duel: bool) -> None:
 		super(RainBow, self).__init__()
 		self.state_dim = state_dim
 		self.action_dim = action_dim
@@ -39,6 +40,7 @@ class RainBow(object):
 		# tricks
 		self.use_double = use_double
 		self.use_per = use_per
+		self.use_duel = use_duel
 
 		if self.use_per:
 			self.prop_alpha = prop_alpha
@@ -49,12 +51,19 @@ class RainBow(object):
 			self.replay = ReplayBuffer(state_dim, 1, max_replay_size)
 		
 		# Due to DQN needs to output \max_a Q(s', a'), we module this as multiple outputs corresponding to action dimensions.
-		self.critic = Net.Policy(obs_dim=state_dim,
+		if self.use_duel:
+			# 3. Dueling Network
+			self.critic = Net.DuelingPolicy(obs_dim=state_dim,
 								 action_dim=action_dim,
-								 max_action=None,
 								 layer_size=layer_size,
-								 hidden_size=hidden_size,
-								 is_continuous=False).to(device)
+								 hidden_size=hidden_size).to(device)
+		else:
+			self.critic = Net.Policy(obs_dim=state_dim,
+									action_dim=action_dim,
+									max_action=None,
+									layer_size=layer_size,
+									hidden_size=hidden_size,
+									is_continuous=False).to(device)
 		self.critic_target = copy.deepcopy(self.critic).to(device)
 		
 		self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=self.lr_policy)
