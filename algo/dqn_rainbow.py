@@ -171,6 +171,11 @@ class RainBow(object):
 	 
 				next_state, reward, done, truncated = env.step(action)
 				episode_reward += reward
+
+				# used for LunarLander
+				if reward <= -100:
+					reward = -1
+
 				self.replay.store(s=state,
 								  a=action,
 								  r=np.array([reward]),

@@ -25,11 +25,11 @@ parser.add_argument('--layer-size', type=float, default=3, metavar='N',
 					help='the layer size of network')
 parser.add_argument('--hidden-size', type=float, default=256, metavar='N',
 					help='the hidden size of network')
-parser.add_argument('--env-name', type=str, default="CartPole-v1", metavar='N',
+parser.add_argument('--env-name', type=str, default="LunarLander-v2", metavar='N',
 					help='the env name')
-parser.add_argument('--max-train-steps', type=int, default=5000000, metavar='N',
+parser.add_argument('--max-train-steps', type=int, default=5e5, metavar='N',
 					help='the total training steps')
-parser.add_argument('--max-grad-norm', type=float, default=10.0, metavar='N',
+parser.add_argument('--max-grad-norm', type=float, default=1.0, metavar='N',
 					help='gradient norm used to prevent gradient explosion')
 parser.add_argument('--max-replay-size', type=float, default=50000, metavar='N',
 					help='maximum replay size to store the transition')
@@ -51,7 +51,7 @@ parser.add_argument('--epsilon-min', type=int, default=0.1, metavar='N',
 
 # RainBow Tricks
 # 1. double DQN
-parser.add_argument('--use-double', type=bool, default=True, metavar='N',
+parser.add_argument('--use-double', type=bool, default=False, metavar='N',
 					help='whether to use double network tricks')
 
 # 2. PER
