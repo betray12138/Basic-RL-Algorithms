@@ -13,7 +13,7 @@ from algo.dqn_rainbow import RainBow
 parser = argparse.ArgumentParser(description='PyTorch DQN initial')
 parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
 					help='discount factor (default: 0.99)')
-parser.add_argument('--seed', type=int, default=121, metavar='N',
+parser.add_argument('--seed', type=int, default=123, metavar='N',
 					help='random seed (default: 121)')
 parser.add_argument('--log-interval', type=int, default=5, metavar='N',
 					help='interval between training status logs (default: 10)')

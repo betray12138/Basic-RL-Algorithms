@@ -68,9 +68,8 @@ class SumTree(object):
                 else:
                     v -= self.tree[child_left_idx]
                     parent_idx = child_right_idx
-
-        data_index = tree_index - self.buffer_capacity + 1  # tree_index->data_index
-        return data_index, self.tree[tree_index]  # return the replay buffer index and the corresponding priority
+        buffer_index = tree_index - self.buffer_capacity + 1  # tree_index->data_index
+        return buffer_index, self.tree[tree_index]  # return the replay buffer index and the corresponding priority
 
     @property
     def priority_sum(self):

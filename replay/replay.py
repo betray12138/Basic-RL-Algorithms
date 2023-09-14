@@ -72,15 +72,14 @@ class PER(ReplayBuffer):
         index, IS_weight = self.sum_tree.prioritized_sample(N=self.size,
                                                             batch_size=batch_size,
                                                             beta=self.beta)
-        # beta should be adjusted 
-        
         # index does not need to compute on gpu, but the IS_weight need
         batch_s, batch_a, batch_r, batch_s_, batch_dw = self.sample_with_index_to_tensor(index, device)
         return batch_s, batch_a, batch_r, batch_s_, batch_dw, index, torch.FloatTensor(IS_weight).reshape(batch_size, -1).to(device)
     
     def update_priority_batch(self, batch_index: np.ndarray, td_error: torch.Tensor):
         priorities_in_batch = (np.abs(td_error.detach().cpu().numpy()) + 1e-6) ** self.alpha
-        for idx, priority in zip(batch_index, priorities_in_batch):
+        # Note that the `batch_index` and  `priorities_in_batch` must have the same dimension
+        for idx, priority in zip(batch_index, priorities_in_batch.flatten()):
             self.sum_tree.update_priority(idx, priority)
         
     def adjust_beta(self, beta: float):
