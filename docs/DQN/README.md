@@ -157,7 +157,7 @@ We introduce the independent gaussian noise: each noise is independent, so there
 
 By the way, the other paradigm is factorised gaussian noise, whose weight on the edge is determined by the multiplication of engaged neurons' weights, so there are $p+q$ parameters in total.
 
-For the initialization of parameters, each parameter is subject to the uniform distribution $\mathcal{U}[-\sqrt{\frac{3}{p}}, \sqrt{\frac{3}{p}}]$ (independent gaussian noise) and for the noise, it is computed by the following function:
+For the initialization of parameters, each parameter is subject to the uniform distribution $\mathcal{U}[-\sqrt{\frac{3}{p}}, \sqrt{\frac{3}{p}}]$, where $p$ denotes the input dimensions (for independent gaussian noise) and for the noise, it is computed by the following function:
 
 $f(x)=sgn(x)\sqrt{|x|}$
 

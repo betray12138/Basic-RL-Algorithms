@@ -14,11 +14,12 @@ class RainBow(object):
 	def __init__(self, device: str, state_dim: int, action_dim: int, gamma: float,
 				 lr_policy: float, layer_size: int, hidden_size: int, max_grad_norm: float,
 				 max_replay_size: int, batch_size:int, target_update_coee: float, target_interval: int,
-				  epsilon_decay: float, epsilon_max: float, epsilon_min: float,
+				 epsilon_decay: float, epsilon_max: float, epsilon_min: float,
 				 use_double: bool, use_per: bool,
-				  prop_alpha: float, weight_beta: float, gain_beta_steps: float,
-				  use_duel: bool,
-				   use_multi_step: bool, step_n: int) -> None:
+				 prop_alpha: float, weight_beta: float, gain_beta_steps: float,
+				 use_duel: bool,
+				 use_multi_step: bool, step_n: int,
+     			 use_noisy: bool) -> None:
 		super(RainBow, self).__init__()
 		self.state_dim = state_dim
 		self.action_dim = action_dim
@@ -43,10 +44,12 @@ class RainBow(object):
 		self.use_per = use_per
 		self.use_duel = use_duel
 		self.use_multi_step = use_multi_step
+		self.use_noisy = use_noisy
 
 		if self.use_multi_step:
 			self.step_n = step_n
 
+		# 4. multi-step technique
 		if self.use_per:
 			self.prop_alpha = prop_alpha
 			self.weight_beta = weight_beta
@@ -65,19 +68,25 @@ class RainBow(object):
 		if self.use_duel:
 			# 3. Dueling Network
 			self.critic = Net.DuelingPolicy(obs_dim=state_dim,
-								 action_dim=action_dim,
-								 layer_size=layer_size,
-								 hidden_size=hidden_size).to(device)
-		else:
-			self.critic = Net.Policy(obs_dim=state_dim,
 									action_dim=action_dim,
-									max_action=None,
 									layer_size=layer_size,
 									hidden_size=hidden_size,
-									is_continuous=False).to(device)
+         							use_noisy=use_noisy).to(device)
+		else:
+			self.critic = Net.DQNPolicy(obs_dim=state_dim,
+									action_dim=action_dim,
+									layer_size=layer_size,
+									hidden_size=hidden_size, 
+         							use_noisy=use_noisy).to(device)
 		self.critic_target = copy.deepcopy(self.critic).to(device)
 
 		self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=self.lr_policy)
+  
+		# 5. noisy-dqn
+		# if use noisy-dqn, we must abandon the influence of epsilon-greedy
+		if self.use_noisy:
+			self.epsilon = 0
+			self.epsilon_min = 0
 
 	def __train(self):
 		self.critic.train()
@@ -107,11 +116,11 @@ class RainBow(object):
 
 		with torch.no_grad():
 			if self.use_double:
-				a_target = self.critic(next_state)[0].argmax(dim=1, keepdim=True)
-				q_target = self.critic_target(next_state)[0].gather(1, a_target.to(torch.int64))
+				a_target = self.critic(next_state).argmax(dim=1, keepdim=True)
+				q_target = self.critic_target(next_state).gather(1, a_target.to(torch.int64))
 			else:
 				# max will return a tuple with two element, for which we need the first element
-				q_target = self.critic_target(next_state)[0].max(dim=1, keepdim=True)[0]
+				q_target = self.critic_target(next_state).max(dim=1, keepdim=True)[0]
 
 			# 4. multi-step technique
 			# N-step td-target = aggregrated_reward + \gamma^n q_{target}
@@ -120,7 +129,7 @@ class RainBow(object):
 			else:
 				td_target = reward + self.gamma * q_target * (1. - terminal)
 
-		td_error = td_target - self.critic(state)[0].gather(1, action.to(torch.int64))
+		td_error = td_target - self.critic(state).gather(1, action.to(torch.int64))
 		# gather used to collect the value according to the action
 
 		# 2. PER: use weight to adjust the gradient of td-loss and update the priority
@@ -144,7 +153,7 @@ class RainBow(object):
 	def select_action(self, state: np.ndarray, is_evaluation=False) -> (np.ndarray, torch.FloatTensor):
 		with torch.no_grad():
 			state = torch.FloatTensor(state).to(self.device).reshape(-1, self.state_dim)
-			action_mean, _ = self.critic(state)
+			action_mean = self.critic(state)
 			return np.array([np.argmax(action_mean.detach().cpu().numpy())])
 
 	def evaluation(self, env, writter: SummaryWriter, steps=None):

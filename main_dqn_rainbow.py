@@ -74,6 +74,10 @@ parser.add_argument('--use-multi-step', type=bool, default=True, metavar='N',
 parser.add_argument('--step-n', type=int, default=5, metavar='N',
 					help='n steps used in multi-step technique')
 
+# 5. noisy-DQN
+parser.add_argument('--use-noisy', type=bool, default=True, metavar='N',
+					help='whether to use noisy linear network tricks')
+
 args = parser.parse_args()
 
 env_unwrapped = gym.make(args.env_name, args.seed)
@@ -108,7 +112,8 @@ agent = RainBow(device=device,
              gain_beta_steps=args.gain_beta_steps,
              use_duel=args.use_duel, 
              use_multi_step=args.use_multi_step,
-             step_n=args.step_n)
+             step_n=args.step_n,
+             use_noisy=args.use_noisy)
 
 common_path = "./logs/" + agent.__class__.__name__ + "/" + args.env_name + "/seed_" + str(args.seed) + "_" + \
     datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + "/"
