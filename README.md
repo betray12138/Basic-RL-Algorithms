@@ -30,5 +30,7 @@ This project is used to implement all kinds of RL basic algorithms.
 
 `pip install tensorboardX`
 
+`apt-get install patchelf`
+
 
 
