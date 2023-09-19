@@ -2,7 +2,7 @@ import model.network as Net
 import torch.optim as optim
 import torch
 import numpy as np
-from torch.utils.tensorboard import SummaryWriter
+from tensorboardX import SummaryWriter
 from torch.nn.utils import clip_grad_norm_
 from util.reward_norm import RewardScaling
 from replay.replay import ReplayBuffer, PER

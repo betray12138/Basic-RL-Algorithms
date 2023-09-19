@@ -14,11 +14,21 @@ This project is used to implement all kinds of RL basic algorithms.
 ## The implemented algorithms
 1. A2C (A2C Continuous / A2C Discrete)
 2. DDPG
-3. RainBow-DQN(initial, double, PER, )
+3. RainBow-DQN(initial, double, PER, dueling, )
 
 ## How to use
-we provide the environment.yaml, and you can import it with anaconda like: 
 
-`conda env create -f environment.yaml`
+`conda create --name basic_rl python=3.10`
 
-`conda activate yours`
+`conda activate basic_rl`
+
+`pip install torch torchvision`
+
+`conda install swig`
+
+`conda install gymnasium[all]`
+
+`pip install tensorboardX`
+
+
+
