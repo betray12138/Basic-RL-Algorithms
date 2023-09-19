@@ -55,7 +55,7 @@ parser.add_argument('--use-double', type=bool, default=True, metavar='N',
 					help='whether to use double network tricks')
 
 # 2. PER
-parser.add_argument('--use-per', type=bool, default=False, metavar='N',
+parser.add_argument('--use-per', type=bool, default=True, metavar='N',
 					help='whether to use PER')
 parser.add_argument('--prop-alpha', type=float, default=0.6, metavar='N',
 					help='the power of computing the p(i)')

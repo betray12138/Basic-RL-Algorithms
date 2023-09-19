@@ -14,7 +14,7 @@ This project is used to implement all kinds of RL basic algorithms.
 ## The implemented algorithms
 1. A2C (A2C Continuous / A2C Discrete)
 2. DDPG
-3. RainBow-DQN(initial, double, PER, dueling, )
+3. RainBow-DQN(initial, double, PER, dueling, multi-step)
 
 ## How to use
 
