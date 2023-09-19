@@ -200,7 +200,7 @@ class NoisyLinearNet(nn.Module):
         epsilon_j = self.__compute_noise_generate_func(self.out_dim)
         
         # use torch.ger to implement dot mul
-        self.w_noise.copy_(torch.ger(epsilon_i, epsilon_j))
+        self.w_noise.copy_(torch.ger(epsilon_j, epsilon_i))
         self.b_noise.copy_(epsilon_j)
         
     def forward(self, x: torch.FloatTensor):

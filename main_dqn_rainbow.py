@@ -65,7 +65,7 @@ parser.add_argument('--gain-beta-steps', type=int, default=5e5, metavar='N',
 					help='the steps for beta changes to 1')
 
 # 3. Dueling DQN
-parser.add_argument('--use-duel', type=bool, default=True, metavar='N',
+parser.add_argument('--use-duel', type=bool, default=False, metavar='N',
 					help='whether to use dueling network tricks')
 
 # 4. multi-step technique
