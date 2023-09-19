@@ -68,6 +68,11 @@ parser.add_argument('--gain-beta-steps', type=int, default=5e5, metavar='N',
 parser.add_argument('--use-duel', type=bool, default=False, metavar='N',
 					help='whether to use dueling network tricks')
 
+# 4. multi-step technique
+parser.add_argument('--use-multi-step', type=bool, default=False, metavar='N',
+					help='whether to use multi-step tricks')
+parser.add_argument('--step-n', type=int, default=5, metavar='N',
+					help='n steps used in multi-step technique')
 
 args = parser.parse_args()
 
@@ -101,7 +106,9 @@ agent = RainBow(device=device,
              prop_alpha=args.prop_alpha,
              weight_beta=args.weight_beta,
              gain_beta_steps=args.gain_beta_steps,
-             use_duel=args.use_duel)
+             use_duel=args.use_duel, 
+             use_multi_step=args.use_multi_step,
+             step_n=args.step_n)
 
 common_path = "./logs/" + agent.__class__.__name__ + "/" + args.env_name + "/seed_" + str(args.seed) + "_" + \
     datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + "/"

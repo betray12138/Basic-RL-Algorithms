@@ -5,19 +5,20 @@ import numpy as np
 from tensorboardX import SummaryWriter
 from torch.nn.utils import clip_grad_norm_
 from util.reward_norm import RewardScaling
-from replay.replay import ReplayBuffer, PER
+from replay.replay import ReplayBuffer, PER, NStepPER, NStepReplayBuffer
 import copy
 import torch.nn as nn
 from util.schedule import LinearSchedule
 
 class RainBow(object):
-	def __init__(self, device: str, state_dim: int, action_dim: int, gamma: float, 
-				 lr_policy: float, layer_size: int, hidden_size: int, max_grad_norm: float, 
+	def __init__(self, device: str, state_dim: int, action_dim: int, gamma: float,
+				 lr_policy: float, layer_size: int, hidden_size: int, max_grad_norm: float,
 				 max_replay_size: int, batch_size:int, target_update_coee: float, target_interval: int,
-				  epsilon_decay: float, epsilon_max: float, epsilon_min: float, 
-				 use_double: bool, use_per: bool, 
-	 			 prop_alpha: float, weight_beta: float, gain_beta_steps: float,
-		 		 use_duel: bool) -> None:
+				  epsilon_decay: float, epsilon_max: float, epsilon_min: float,
+				 use_double: bool, use_per: bool,
+				  prop_alpha: float, weight_beta: float, gain_beta_steps: float,
+				  use_duel: bool,
+				   use_multi_step: bool, step_n: int) -> None:
 		super(RainBow, self).__init__()
 		self.state_dim = state_dim
 		self.action_dim = action_dim
@@ -36,20 +37,30 @@ class RainBow(object):
 		self.target_interval = target_interval
 		self.update_step = 0
 		self.epsilon = epsilon_max
-  
+
 		# tricks
 		self.use_double = use_double
 		self.use_per = use_per
 		self.use_duel = use_duel
+		self.use_multi_step = use_multi_step
+
+		if self.use_multi_step:
+			self.step_n = step_n
 
 		if self.use_per:
 			self.prop_alpha = prop_alpha
 			self.weight_beta = weight_beta
-			self.replay = PER(state_dim, 1, max_replay_size, self.prop_alpha, self.weight_beta)
 			self.beta_schedule = LinearSchedule(gain_beta_steps, weight_beta, 1.0)
+			if self.use_multi_step:
+				self.replay = NStepPER(state_dim, 1, max_replay_size, self.prop_alpha, self.weight_beta, self.gamma, self.step_n)
+			else:
+				self.replay = PER(state_dim, 1, max_replay_size, self.prop_alpha, self.weight_beta)
 		else:
-			self.replay = ReplayBuffer(state_dim, 1, max_replay_size)
-		
+			if self.use_multi_step:
+				self.replay = NStepReplayBuffer(state_dim, 1, max_replay_size, self.gamma, self.step_n)
+			else:
+				self.replay = ReplayBuffer(state_dim, 1, max_replay_size)
+
 		# Due to DQN needs to output \max_a Q(s', a'), we module this as multiple outputs corresponding to action dimensions.
 		if self.use_duel:
 			# 3. Dueling Network
@@ -65,35 +76,35 @@ class RainBow(object):
 									hidden_size=hidden_size,
 									is_continuous=False).to(device)
 		self.critic_target = copy.deepcopy(self.critic).to(device)
-		
+
 		self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=self.lr_policy)
-	
+
 	def __train(self):
 		self.critic.train()
 		self.update_step += 1
-	
+
 	def __eval(self):
 		self.critic.eval()
-		
+
 	def update(self):
 		# 2. PER: get the index and weight, following with updating the priority
 		if self.use_per:
 			state, action, reward, next_state, terminal, batch_idx, IS_weight = self.replay.sample_to_tensor(self.batch_size, self.device)
-		else:		
+		else:
 			state, action, reward, next_state, terminal = self.replay.sample_to_tensor(self.batch_size, self.device)
 
 		self.__train()
-		
+
 		# 0. DQN initial loss: td-target
 		# (r_i + \gamma * \max_a Q_{target}(s', a) - Q(s,a)) ^ 2
-  
+
 		# 1. double DQN
-		# Double DQN holds that the action selected from the same Q network used to compute state-action value 
+		# Double DQN holds that the action selected from the same Q network used to compute state-action value
 		  # may tend to overestimate more easily
 		# thus we should seperate the action selection and state-action computation
 		# a_target = \argmax_a Q(s',a)
 		# q_target = Q_{target}(s', a_target)
-  
+
 		with torch.no_grad():
 			if self.use_double:
 				a_target = self.critic(next_state)[0].argmax(dim=1, keepdim=True)
@@ -101,7 +112,13 @@ class RainBow(object):
 			else:
 				# max will return a tuple with two element, for which we need the first element
 				q_target = self.critic_target(next_state)[0].max(dim=1, keepdim=True)[0]
-			td_target = reward + self.gamma * q_target * (1. - terminal)
+
+			# 4. multi-step technique
+			# N-step td-target = aggregrated_reward + \gamma^n q_{target}
+			if self.use_multi_step:
+				td_target = reward + (self.gamma ** self.step_n) * q_target * (1. - terminal)
+			else:
+				td_target = reward + self.gamma * q_target * (1. - terminal)
 
 		td_error = td_target - self.critic(state)[0].gather(1, action.to(torch.int64))
 		# gather used to collect the value according to the action
@@ -118,18 +135,18 @@ class RainBow(object):
 		clip_grad_norm_(self.critic.parameters(), self.max_grad_norm)
 
 		self.critic_optimizer.step()
-		
+
 		# target update
 		if self.update_step % self.target_interval == 0:
 			for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
 				target_param.data.copy_(self.target_update_coee * param + (1 - self.target_update_coee) * target_param)
-		
+
 	def select_action(self, state: np.ndarray, is_evaluation=False) -> (np.ndarray, torch.FloatTensor):
 		with torch.no_grad():
 			state = torch.FloatTensor(state).to(self.device).reshape(-1, self.state_dim)
-			action_mean, _ = self.critic(state)	
-			return np.array([np.argmax(action_mean.detach().cpu().numpy())]) 
-	
+			action_mean, _ = self.critic(state)
+			return np.array([np.argmax(action_mean.detach().cpu().numpy())])
+
 	def evaluation(self, env, writter: SummaryWriter, steps=None):
 		self.__eval()
 		episode_reward = 0
@@ -144,12 +161,12 @@ class RainBow(object):
 		if steps:
 			writter.add_scalar("evaluation/return", episode_reward, steps)
 		return episode_reward
-	
+
 	def save_model(self, path: str, steps: int):
 		# path denotes the directory location end with /
 		torch.save(self.critic.state_dict(), path + "critic_" + str(steps) + ".pth")
-		
-			
+
+
 	def train(self, env, env_test, writter: SummaryWriter, max_train_steps: int, random_steps: int,
 			  save_interval: int, log_interval: int, saving_path: str):
 		# random steps used to collect the initial dataset
@@ -168,7 +185,7 @@ class RainBow(object):
 					action = np.array([env.action_space.sample()])	# 随机采样动作
 				else:
 					action = self.select_action(state)
-	 
+
 				next_state, reward, done, truncated = env.step(action)
 				episode_reward += reward
 
@@ -182,7 +199,7 @@ class RainBow(object):
 								  s_=next_state,
 								  dw=np.array([done]))
 				state = next_state.flatten()
-	
+
 				if cur_step > random_steps:
 					# begin to update the network
 					# of course, you can choose to update the model multiple times
@@ -194,13 +211,12 @@ class RainBow(object):
 					if self.use_per:
 						self.replay.adjust_beta(self.beta_schedule.get_value(cur_step - random_steps))
 
-	
+
 			print("Episode: " + str(train_episodes) + " training return: " + str(episode_reward))
 			writter.add_scalar("training/return", episode_reward, cur_step)
-			
+
 			if train_episodes % log_interval == 0:
 				self.evaluation(env_test, writter, cur_step)
-			
+
 			if train_episodes % save_interval == 0:
 				self.save_model(saving_path, cur_step)
-  
