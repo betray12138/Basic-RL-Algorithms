@@ -8,7 +8,7 @@ class ReplayBuffer(object):
         self.max_size = max_size
         self.state_dim = state_dim
         self.action_dim = action_dim
-        self.clear()
+        ReplayBuffer.clear(self)
 
     def store(self, s: np.ndarray, a: np.ndarray, r: np.ndarray, s_: np.ndarray, dw: np.ndarray):
         self.state[self.count] = s.flatten()
@@ -67,7 +67,7 @@ class PER(ReplayBuffer):
         priority = 1.0 if self.size == 0 else self.sum_tree.priority_max
         self.sum_tree.update_priority(buffer_index=self.count, priority=priority)
         
-        super().store(s, a, r, s_, dw)
+        ReplayBuffer.store(self, s, a, r, s_, dw)
     
     def sample_to_tensor(self, batch_size: int, device: str):
         index, IS_weight = self.sum_tree.prioritized_sample(N=self.size,
@@ -92,7 +92,7 @@ class NStepReplayBuffer(ReplayBuffer):
         self.gamma = gamma
         self.step_n = step_n
         
-        self.clear()
+        NStepReplayBuffer.clear(self)
 
     def store(self, s: np.ndarray, a: np.ndarray, r: np.ndarray, s_: np.ndarray, dw: np.ndarray):
         # aggregrate the n-step transition, use deque to replay
@@ -102,7 +102,7 @@ class NStepReplayBuffer(ReplayBuffer):
         # if deque is full, put the aggregrated transition into replay buffer
         if len(self.step_n_deque) == self.step_n:
             s, a, r, s_, dw = self.aggregrate_n_transition()
-            super().store(s, a, r, s_, dw)
+            ReplayBuffer.store(self, s, a, r, s_, dw)
             
     def aggregrate_n_transition(self):
         # deque.append will unsqueeze the dimension 0
@@ -121,7 +121,7 @@ class NStepReplayBuffer(ReplayBuffer):
         return state, action, agg_reward, next_state, done
     
     def clear(self):
-        super().clear()
+        ReplayBuffer.clear(self)
         
         # we use deque to aggregrate the transition
         self.step_n_deque = deque(maxlen=self.step_n)
@@ -131,11 +131,10 @@ class NStepPER(PER):
     def __init__(self, state_dim: int, action_dim: int, max_size: int,
                  alpha: float, beta: float, gamma: float, step_n: int):
         super(NStepPER, self).__init__(state_dim, action_dim, max_size, alpha, beta)
-
         self.gamma = gamma
         self.step_n = step_n
         
-        self.clear()
+        NStepPER.clear(self)
         
 
     def store(self, s: np.ndarray, a: np.ndarray, r: np.ndarray, s_: np.ndarray, dw: np.ndarray):
@@ -146,7 +145,7 @@ class NStepPER(PER):
         # if deque is full, put the aggregrated transition into replay buffer
         if len(self.step_n_deque) == self.step_n:
             s, a, r, s_, dw = self.aggregrate_n_transition()
-            super().store(s, a, r, s_, dw)
+            PER.store(self, s, a, r, s_, dw)
             
     def aggregrate_n_transition(self):
         # deque.append will unsqueeze the dimension 0
@@ -165,6 +164,5 @@ class NStepPER(PER):
         return state, action, agg_reward, next_state, done
         
     def clear(self):
-        super().clear()
-        
+        ReplayBuffer.clear(self)
         self.step_n_deque = deque(maxlen=self.step_n)

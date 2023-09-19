@@ -51,7 +51,7 @@ parser.add_argument('--epsilon-min', type=int, default=0.1, metavar='N',
 
 # RainBow Tricks
 # 1. double DQN
-parser.add_argument('--use-double', type=bool, default=False, metavar='N',
+parser.add_argument('--use-double', type=bool, default=True, metavar='N',
 					help='whether to use double network tricks')
 
 # 2. PER
@@ -65,11 +65,11 @@ parser.add_argument('--gain-beta-steps', type=int, default=5e5, metavar='N',
 					help='the steps for beta changes to 1')
 
 # 3. Dueling DQN
-parser.add_argument('--use-duel', type=bool, default=False, metavar='N',
+parser.add_argument('--use-duel', type=bool, default=True, metavar='N',
 					help='whether to use dueling network tricks')
 
 # 4. multi-step technique
-parser.add_argument('--use-multi-step', type=bool, default=False, metavar='N',
+parser.add_argument('--use-multi-step', type=bool, default=True, metavar='N',
 					help='whether to use multi-step tricks')
 parser.add_argument('--step-n', type=int, default=5, metavar='N',
 					help='n steps used in multi-step technique')
