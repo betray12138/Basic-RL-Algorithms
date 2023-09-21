@@ -145,11 +145,10 @@ class A2C_Discrete(object):
                                   s_=next_state,
                                   dw=np.array([done]))
                 state = next_state.flatten()
+                self.update()
+                self.replay.clear()
             print("Episode: " + str(train_episodes) + " training return: " + str(episode_reward))
             writter.add_scalar("training/return", episode_reward, cur_step)
-            
-            self.update()
-            self.replay.clear()
             
             if train_episodes % log_interval == 0:
                 self.evaluation(env_test, writter, cur_step)

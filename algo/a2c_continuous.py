@@ -11,7 +11,7 @@ class A2C_Continuous(object):
     def __init__(self, device: str, state_dim: int, action_dim: int, max_action: float,
                  gamma: float, lr_policy: float, lr_critic: float,
                  layer_size: int, hidden_size: int, max_grad_norm: float, 
-                 max_replay_size: int, rewardScaling: RewardScaling = None) -> None:
+                 max_replay_size: int) -> None:
         super(A2C_Continuous, self).__init__()
         self.state_dim = state_dim
         self.action_dim = action_dim
@@ -23,7 +23,6 @@ class A2C_Continuous(object):
         self.hidden_size = hidden_size
         self.device = device
         self.max_grad_norm = max_grad_norm
-        self.rewardScaling = rewardScaling
         self.replay = ReplayBuffer(state_dim, action_dim, max_replay_size)
         
         self.actor = Net.Policy(obs_dim=state_dim,
@@ -121,26 +120,21 @@ class A2C_Continuous(object):
             done = False
             truncated = False
             episode_reward = 0
-            if self.rewardScaling:
-                self.rewardScaling.reset()
             while not done and not truncated:
                 cur_step += 1
                 action = self.select_action(state)
                 next_state, reward, done, truncated = env.step(action)
                 episode_reward += reward
-                if self.rewardScaling:
-                    reward = self.rewardScaling.get_and_update(reward)
                 self.replay.store(s=state,
                                   a=action,
                                   r=np.array([reward]),
                                   s_=next_state,
                                   dw=np.array([done]))
                 state = next_state.flatten()
+                self.update()
+                self.replay.clear()
             print("Episode: " + str(train_episodes) + " training return: " + str(episode_reward))
             writter.add_scalar("training/return", episode_reward, cur_step)
-            
-            self.update()
-            self.replay.clear()
             
             if train_episodes % log_interval == 0:
                 self.evaluation(env_test, writter, cur_step)
