@@ -32,3 +32,5 @@ Tips:
 
 
 We use `gymnasium-HalfCheetah-v4` to test TD3.
+
+![The training curve on gynasium-HalfCheetah-v4](TD3-HalfCheetah-v4.png)
