@@ -12,10 +12,11 @@ This project is used to implement all kinds of RL basic algorithms.
 
 
 ## The implemented algorithms
-1. A2C (A2C Continuous / A2C Discrete)
-2. DDPG
-3. RainBow-DQN(initial, double, PER, dueling, multi-step, noisy)
-4. TD3
+1. RainBow-DQN(initial, double, PER, dueling, multi-step, noisy)
+2. REINFORCE
+3. A2C (A2C Continuous / A2C Discrete)
+4. DDPG 
+5. TD3
 
 ## How to use
 
