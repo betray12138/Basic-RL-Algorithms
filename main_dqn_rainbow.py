@@ -51,11 +51,11 @@ parser.add_argument('--epsilon-min', type=int, default=0.1, metavar='N',
 
 # RainBow Tricks
 # 1. double DQN
-parser.add_argument('--use-double', type=bool, default=True, metavar='N',
+parser.add_argument('--use-double', type=bool, default=False, metavar='N',
 					help='whether to use double network tricks')
 
 # 2. PER
-parser.add_argument('--use-per', type=bool, default=True, metavar='N',
+parser.add_argument('--use-per', type=bool, default=False, metavar='N',
 					help='whether to use PER')
 parser.add_argument('--prop-alpha', type=float, default=0.6, metavar='N',
 					help='the power of computing the p(i)')
@@ -69,13 +69,13 @@ parser.add_argument('--use-duel', type=bool, default=False, metavar='N',
 					help='whether to use dueling network tricks')
 
 # 4. multi-step technique
-parser.add_argument('--use-multi-step', type=bool, default=True, metavar='N',
+parser.add_argument('--use-multi-step', type=bool, default=False, metavar='N',
 					help='whether to use multi-step tricks')
 parser.add_argument('--step-n', type=int, default=5, metavar='N',
 					help='n steps used in multi-step technique')
 
 # 5. noisy-DQN
-parser.add_argument('--use-noisy', type=bool, default=True, metavar='N',
+parser.add_argument('--use-noisy', type=bool, default=False, metavar='N',
 					help='whether to use noisy linear network tricks')
 
 args = parser.parse_args()

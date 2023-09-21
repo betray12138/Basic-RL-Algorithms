@@ -65,7 +65,9 @@
 ### Description
 The repo provide the implementation of DQN and its all kinds of variants.
 
-We use epsilon-greedy exploration strategy to balance exploration and exploitation, which proven to have policy improvement guarantee.
+We use `Gymnasium-LunarLander-v2` to test the performance of all the variants.
+
+![RainBow-LunarLander-v2 performance curve](RainBow-LunarLander-v2.png)
 
 #### 1. DQN initial
 We use td-target to update the value function like:
