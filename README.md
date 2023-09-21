@@ -15,6 +15,7 @@ This project is used to implement all kinds of RL basic algorithms.
 1. A2C (A2C Continuous / A2C Discrete)
 2. DDPG
 3. RainBow-DQN(initial, double, PER, dueling, multi-step, noisy)
+4. TD3
 
 ## How to use
 
@@ -28,6 +29,6 @@ This project is used to implement all kinds of RL basic algorithms.
 
 `conda install gymnasium[all]`
 
-`pip install tensorboardX`
+`pip install tensorboardX tensorboard`
 
 `apt-get install patchelf`
