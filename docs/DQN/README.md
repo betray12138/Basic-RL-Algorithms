@@ -186,9 +186,9 @@ $(\mathcal{T} Q)(x,a) = R(x,a) + \gamma\mathbb{E}_{x'}\max_{a'} Q(x',a')$
 
 The above two operators are proven to be $\gamma-$ contraction as:
 
-$||\mathcal{T}^\pi Q_1 - \mathcal{T}^\pi Q_2||_\infty \le \gamma ||Q_1-Q_2 ||_\infty $
+$||\mathcal{T}^\pi Q_1 - \mathcal{T}^\pi Q_2||_\infty \le \gamma ||Q_1-Q_2 ||_\infty$
 
-$||\mathcal{T} Q_1 - \mathcal{T} Q_2||_\infty \le \gamma ||Q_1-Q_2 ||_\infty $
+$||\mathcal{T} Q_1 - \mathcal{T} Q_2||_\infty \le \gamma ||Q_1-Q_2 ||_\infty$
 
 Therefore, according to the Contraction Mapping Theorem, these operators $\mathcal{T}^\pi, \mathcal{T}$ have the only fixed points:
 
