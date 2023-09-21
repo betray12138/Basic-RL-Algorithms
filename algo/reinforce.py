@@ -89,7 +89,6 @@ class Reinforce(object):
     def save_model(self, path: str, steps: int):
         # 此处path传入目录 以 /结尾
         torch.save(self.actor.state_dict(), path + "actor_" + str(steps) + ".pth")
-        torch.save(self.critic.state_dict(), path + "critic_" + str(steps) + ".pth")
         
             
     def train(self, env, env_test, writter: SummaryWriter, max_train_steps: int, 
